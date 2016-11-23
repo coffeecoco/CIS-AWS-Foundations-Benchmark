@@ -39,8 +39,18 @@ def convert(input):
         return input
 
 def send_to_sumo(data):
-    """Sends log message to hosted collector"""
+    '''
+    Sends log message to hosted collector
+    '''
+
     data = json.dumps(data)
+    '''
+    data = urllib.urlencode(data)
+    req = urllib2.Request(SUMO_ENDPOINT, data)
+    response = urllib2.urlopen(req)
+    the_page = response.read()
+    print(the_page)
+    '''
     print(urllib2.urlopen(SUMO_ENDPOINT, data).read())
 
 ### CIS AWS Benchmark Audit Checks ###
@@ -60,6 +70,7 @@ def get_user_info():
 
     try:
         report = iam.get_credential_report()
+
     except Exception, e:
         if re.search('(ReportNotPresent)', str(e)):
             print("Credential report not present, creating report")
@@ -74,9 +85,10 @@ def get_user_info():
     content = (report['Content'].splitlines(True))
 
     for index in range(len(content)):
-        #Parse field names into fields
+        # Parse field names into fields
         if index is 0:
             fields = content[0].split(',')
+            print(fields)
 
         else:
             userInfo = {'benchmarkVersion': '1.0.0', 'eventType' : 'userInfo'}
@@ -98,9 +110,11 @@ def get_user_info():
             else:
                 d["AttachedPolicy"] = "NA"
 
-            userInfo[s[0]] = d
-            #send_to_sumo(userInfo)
+            userInfo['data'] = d
+            #userInfo[s[0]] = d
+            send_to_sumo(userInfo)
             print(userInfo)
+
 def get_policy():
     """Get data for audit checks 1.5-1.11, 1.13"""
     d = {}
