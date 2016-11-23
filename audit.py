@@ -49,7 +49,7 @@ def get_user_info():
                     aws_access_key_id=AWS_ACCESS_KEY_ID,
                     aws_secret_access_key=AWS_SECRET_ACCESS_KEY
                     )
-nnn/
+    
     try: report = iam.get_credential_report()
     except Exception, e:
         if re.search('(ReportNotPresent)', str(e)):
