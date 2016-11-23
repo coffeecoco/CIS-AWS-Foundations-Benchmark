@@ -4,6 +4,7 @@ from __future__ import print_function
 
 import boto3
 import ConfigParser
+import datetime
 import json
 import logging
 import re
@@ -20,12 +21,18 @@ SUMO_ENDPOINT = config.get('Default', 'sumo_endpoint')
 logging.basicConfig(level=None)
 logger = logging.getLogger(__name__)
 
+#timestamp = str(datetime.datetime.utcnow())
+
 ### Handlers ###
 def date_handler(obj):
     if hasattr(obj, 'isoformat'):
         return obj.isoformat()
     else:
         raise TypeError
+
+def generate_timestamp():
+    global timestamp
+    timestamp = str(datetime.datetime.utcnow())
 
 def convert(input):
     """Covert from unicode to utf8"""
@@ -88,10 +95,9 @@ def get_user_info():
         # Parse field names into fields
         if index is 0:
             fields = content[0].split(',')
-            print(fields)
 
         else:
-            userInfo = {'benchmarkVersion': '1.0.0', 'eventType' : 'userInfo'}
+            userInfo = {'benchmarkVersion': '1.0.0', 'eventType' : 'userInfo', 'timestamp' : timestamp}
             d = {}
             s = content[index].split(',')
 
@@ -111,7 +117,6 @@ def get_user_info():
                 d["AttachedPolicy"] = "NA"
 
             userInfo['data'] = d
-            #userInfo[s[0]] = d
             send_to_sumo(userInfo)
             print(userInfo)
 
@@ -204,6 +209,7 @@ def get_cloudtrail():
     #print(trails2)
 
 def main():
+    generate_timestamp()
     get_user_info()
 
 if __name__ == "__main__":
