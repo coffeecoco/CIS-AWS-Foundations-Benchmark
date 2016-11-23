@@ -17,7 +17,7 @@ config.readfp(open(r'.config'))
 
 SUMO_ENDPOINT = config.get('Default', 'sumo_endpoint')
 
-logging.basicConfig(level=logging.DEBUG)
+logging.basicConfig(level=None)
 logger = logging.getLogger(__name__)
 
 ### Handlers ###
