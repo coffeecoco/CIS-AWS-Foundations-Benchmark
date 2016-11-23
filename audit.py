@@ -41,15 +41,18 @@ def send_to_sumo(data):
 
 ### CIS AWS Benchmark Audit Checks ###
 def get_user_info():
-    '''Get data for audit checks 1.1, 1.2, 1.3, 1.4, 1.12, 1.13, 1.15'''
-    
+    """Get data for audit checks 1.1, 1.2, 1.3, 1.4, 1.12, 1.13, 1.15"""
+
+    # report field names to be used in arrays
     fields = []
-    
+
+    """
     iam = boto3.client('iam',
                     aws_access_key_id=AWS_ACCESS_KEY_ID,
                     aws_secret_access_key=AWS_SECRET_ACCESS_KEY
                     )
-    
+    """
+
     try: report = iam.get_credential_report()
     except Exception, e:
         if re.search('(ReportNotPresent)', str(e)):
@@ -90,16 +93,18 @@ def get_user_info():
                 d["AttachedPolicy"] = "NA"
 
             userInfo[s[0]] = d
-            send_to_sumo(userInfo)
-
+            #send_to_sumo(userInfo)
+            print(userInfo)
 def get_policy():
-    '''Get data for audit checks 1.5-1.11, 1.13'''
+    """Get data for audit checks 1.5-1.11, 1.13"""
     d = {}
-    
+
+    """
     iam = boto3.client('iam',
                     aws_access_key_id=AWS_ACCESS_KEY_ID,
                     aws_secret_access_key=AWS_SECRET_ACCESS_KEY
                     )
+    """
 
     ### Generate data for audit checks 1.5-1.11 ###
     try: results = iam.get_account_password_policy()
@@ -123,12 +128,14 @@ def get_policy():
     send_to_sumo(d)
 
 def get_cloudtrail():
-    '''Get data for audit checks 2.1-2.8'''
-    
+    """Get data for audit checks 2.1-2.8"""
+
+    """
     cloudtrail = boto3.client('cloudtrail',
                     aws_access_key_id=AWS_ACCESS_KEY_ID,
                     aws_secret_access_key=AWS_SECRET_ACCESS_KEY
                     )
+    """
 
     d = {}
 
@@ -186,7 +193,9 @@ def get_cloudtrail():
     ### Generate data for check 2.4 ###
     #print(trails2)
 
-def lambda_handler(event, context):
+def main():
     get_user_info()
-    get_policy()
-    get_cloudtrail()
+
+if __name__ == "__main___":
+    main()
+
