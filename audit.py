@@ -51,11 +51,15 @@ def get_user_info():
     fields = []
 
     logger.info('Establishing iam connection')
-    iam = boto3.client('iam')
+    try:
+        iam = boto3.client('iam')
+    except Exception as e:
+        print(e)
     #iam = boto3.client('iam', aws_access_key_id=AWS_ACCESS_KEY_ID, aws_secret_access_key=AWS_SECRET_ACCESS_KEY)
 
 
-    try: report = iam.get_credential_report()
+    try:
+        report = iam.get_credential_report()
     except Exception, e:
         if re.search('(ReportNotPresent)', str(e)):
             print("Credential report not present, creating report")
@@ -188,6 +192,6 @@ def get_cloudtrail():
 def main():
     get_user_info()
 
-if __name__ == "__main___":
+if __name__ == "__main__":
     main()
 
