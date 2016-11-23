@@ -50,6 +50,7 @@ def get_user_info():
     # report field names to be used in arrays
     fields = []
 
+    logger.info('Establishing iam connection')
     iam = boto3.client('iam')
     #iam = boto3.client('iam', aws_access_key_id=AWS_ACCESS_KEY_ID, aws_secret_access_key=AWS_SECRET_ACCESS_KEY)
 
