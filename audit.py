@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 
 from __future__ import print_function
+from dateutil.parser import parse
 
 import boto3
 import ConfigParser
@@ -31,8 +32,19 @@ def date_handler(obj):
         raise TypeError
 
 def generate_timestamp():
-    global timestamp
-    timestamp = str(datetime.datetime.utcnow())
+    global ts_now
+    global ts_90days
+
+    ts_now = datetime.datetime.utcnow()
+    ts_90days = ts_now - datetime.timedelta(days=90)
+
+    print("now: ", ts_now)
+    print("then: ", ts_90days)
+
+def compare_timestamps(last_access, timestamp):
+    #datetime.datetime.strptime(date, format1).strftime(format2)
+    pass
+
 
 def convert(input):
     """Covert from unicode to utf8"""
@@ -97,7 +109,7 @@ def get_user_info():
             fields = content[0].split(',')
 
         else:
-            userInfo = {'benchmarkVersion': '1.0.0', 'eventType' : 'userInfo', 'timestamp' : timestamp}
+            userInfo = {'benchmarkVersion': '1.0.0', 'eventType' : 'userInfo', 'timestamp' : str(ts_now)}
             d = {}
             s = content[index].split(',')
 
@@ -210,7 +222,10 @@ def get_cloudtrail():
 
 def main():
     generate_timestamp()
-    get_user_info()
+
+    last_access = '2016-11-23T12:59:00+00:00'
+    #compare_timestamps(last_access, timestamp)
+    #get_user_info()
 
 if __name__ == "__main__":
     main()
