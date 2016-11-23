@@ -2,18 +2,19 @@
 
 from __future__ import print_function
 
-import time
-import re
+import boto3
+import ConfigParser
 import json
+import re
+import time
 import urllib
 import urllib2
-import boto3
 
 ### GLOBAL VARIABLES ###
-AWS_ACCESS_KEY_ID = 'AKIAIPSSPRW4UD6QOYXQ'
-AWS_SECRET_ACCESS_KEY = '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'
+config = ConfigParser.ConfigParser()
+config.readfp(open(r'.config'))
 
-sumoEndpoint = 'https://endpoint2.collection.sumologic.com/receiver/v1/http/ZaVnC4dhaV2RDfCeyDY1DfHSpTHcR3mEEvOxQunXfTj2AWVjhQG9Q3PwxE7h1uzNRhRH2By271B9kFuVIeK4f8B9y-v0-fNV2wTPYX-5KjJYnyNELgQePw=='
+SUMO_ENDPOINT = config.get('Default', 'sumo_endpoint')
 
 ### Handlers ###
 def date_handler(obj):
@@ -36,7 +37,7 @@ def convert(input):
 def send_to_sumo(data):
     """Sends log message to hosted collector"""
     data = json.dumps(data)
-    print(urllib2.urlopen(sumoEndpoint, data).read())
+    print(urllib2.urlopen(SUMO_ENDPOINT, data).read())
 
 ### CIS AWS Benchmark Audit Checks ###
 def get_user_info():
@@ -48,7 +49,7 @@ def get_user_info():
                     aws_access_key_id=AWS_ACCESS_KEY_ID,
                     aws_secret_access_key=AWS_SECRET_ACCESS_KEY
                     )
-
+nnn/
     try: report = iam.get_credential_report()
     except Exception, e:
         if re.search('(ReportNotPresent)', str(e)):
@@ -73,7 +74,7 @@ def get_user_info():
             d = {}
             s = content[index].split(',')
 
-            for index in range(1, 22):
+            for index in range(len(fields)):
                 d[fields[index]] = s[index]
 
             if not re.search('^<root_account>', s[0]):
