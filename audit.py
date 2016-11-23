@@ -5,6 +5,7 @@ from __future__ import print_function
 import boto3
 import ConfigParser
 import json
+import logging
 import re
 import time
 import urllib
@@ -15,6 +16,9 @@ config = ConfigParser.ConfigParser()
 config.readfp(open(r'.config'))
 
 SUMO_ENDPOINT = config.get('Default', 'sumo_endpoint')
+
+logging.basicConfig(level=logging.DEBUG)
+logger = logging.getLogger(__name__)
 
 ### Handlers ###
 def date_handler(obj):
@@ -46,12 +50,9 @@ def get_user_info():
     # report field names to be used in arrays
     fields = []
 
-    """
-    iam = boto3.client('iam',
-                    aws_access_key_id=AWS_ACCESS_KEY_ID,
-                    aws_secret_access_key=AWS_SECRET_ACCESS_KEY
-                    )
-    """
+    iam = boto3.client('iam')
+    #iam = boto3.client('iam', aws_access_key_id=AWS_ACCESS_KEY_ID, aws_secret_access_key=AWS_SECRET_ACCESS_KEY)
+
 
     try: report = iam.get_credential_report()
     except Exception, e:
@@ -99,12 +100,8 @@ def get_policy():
     """Get data for audit checks 1.5-1.11, 1.13"""
     d = {}
 
-    """
-    iam = boto3.client('iam',
-                    aws_access_key_id=AWS_ACCESS_KEY_ID,
-                    aws_secret_access_key=AWS_SECRET_ACCESS_KEY
-                    )
-    """
+    iam = boto3.client('iam')
+    #iam = boto3.client('iam',aws_access_key_id=AWS_ACCESS_KEY_ID, aws_secret_access_key=AWS_SECRET_ACCESS_KEY)
 
     ### Generate data for audit checks 1.5-1.11 ###
     try: results = iam.get_account_password_policy()
@@ -130,12 +127,8 @@ def get_policy():
 def get_cloudtrail():
     """Get data for audit checks 2.1-2.8"""
 
-    """
-    cloudtrail = boto3.client('cloudtrail',
-                    aws_access_key_id=AWS_ACCESS_KEY_ID,
-                    aws_secret_access_key=AWS_SECRET_ACCESS_KEY
-                    )
-    """
+    cloudtrail = boto3.client('cloudtrail')
+    #cloudtrail = boto3.client('cloudtrail', aws_access_key_id=AWS_ACCESS_KEY_ID, aws_secret_access_key=AWS_SECRET_ACCESS_KEY)
 
     d = {}
 
@@ -154,10 +147,8 @@ def get_cloudtrail():
     ### Generate data for check 2.3 ###
     bucket = trails['trailList'][0]['S3BucketName']
 
-    s3 = boto3.client('s3',
-                    aws_access_key_id=AWS_ACCESS_KEY_ID,
-                    aws_secret_access_key=AWS_SECRET_ACCESS_KEY
-                    )
+    s3 = boto3.client('s3')
+    #s3 = boto3.client('s3', aws_access_key_id=AWS_ACCESS_KEY_ID, aws_secret_access_key=AWS_SECRET_ACCESS_KEY)
 
     bucket_acl = s3.get_bucket_acl(Bucket=bucket)
     
