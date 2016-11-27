@@ -32,18 +32,47 @@ def date_handler(obj):
         raise TypeError
 
 def generate_timestamp():
-    global ts_now
-    global ts_90days
+    global now
+    #global ts_90days
 
-    ts_now = datetime.datetime.utcnow()
-    ts_90days = ts_now - datetime.timedelta(days=90)
+    now = datetime.datetime.utcnow()
+    #ts_90days = ts_now - datetime.timedelta(days=90)
 
-    print("now: ", ts_now)
-    print("then: ", ts_90days)
 
-def compare_timestamps(last_access, timestamp):
+    #a = datetime.datetime.strptime("10/12/13", "%m/%d/%y")
+    #print(a)
+
+    print("now: ", now)
+    #print("then: ", ts_90days)
+
+def check_for_unused_credential(last_access):
     #datetime.datetime.strptime(date, format1).strftime(format2)
-    pass
+    '''
+
+    #2016-07-25T17:33:00+00:00
+
+    a = dt.strptime("10/12/13", "%m/%d/%y")
+    b = dt.strptime("10/15/13", "%m/%d/%y")
+    today = datetime.datetime.today()
+    modified_date = datetime.datetime.fromtimestamp(os.path.getmtime('yourfile'))
+    duration = today - modified_date
+    duration.days > 90 # approximation again. there is no direct support for months.
+    if True
+
+    '''
+
+    global now
+
+    last_access = re.sub(r'\+\d+:\d+', '', last_access)
+    last_access = datetime.datetime.strptime(last_access, "%Y-%m-%dT%H:%M:%S")
+
+    duration = now - last_access
+
+    if (duration.days > 90):
+        return True
+    else:
+        return False
+
 
 
 def convert(input):
@@ -109,7 +138,7 @@ def get_user_info():
             fields = content[0].split(',')
 
         else:
-            userInfo = {'benchmarkVersion': '1.0.0', 'eventType' : 'userInfo', 'timestamp' : str(ts_now)}
+            userInfo = {'benchmarkVersion': '1.0.0', 'eventType' : 'userInfo', 'timestamp' : str(now)}
             d = {}
             s = content[index].split(',')
 
@@ -117,7 +146,7 @@ def get_user_info():
                 d[fields[index]] = s[index]
 
             if not re.search('^<root_account>', s[0]):
-                ### Generate data for check 1.15 ###
+                # Generate data for check 1.15
                 try: policy = iam.list_user_policies(UserName=s[0])
                 except Exception, e:
                     print(e)
@@ -129,7 +158,7 @@ def get_user_info():
                 d["AttachedPolicy"] = "NA"
 
             userInfo['data'] = d
-            send_to_sumo(userInfo)
+            #send_to_sumo(userInfo)
             print(userInfo)
 
 def get_policy():
@@ -221,11 +250,16 @@ def get_cloudtrail():
     #print(trails2)
 
 def main():
+
     generate_timestamp()
 
-    last_access = '2016-11-23T12:59:00+00:00'
-    #compare_timestamps(last_access, timestamp)
-    #get_user_info()
+    last_access = '2016-10-25T17:33:00+00:00'
+
+    get_user_info()
+
+    result = check_for_unused_credential(last_access)
+    print('result', result)
+
 
 if __name__ == "__main__":
     main()
