@@ -256,10 +256,33 @@ def get_cloudtrail():
     #cloudtrail = boto3.client('cloudtrail')
     #cloudtrail = boto3.client('cloudtrail', aws_access_key_id=AWS_ACCESS_KEY_ID, aws_secret_access_key=AWS_SECRET_ACCESS_KEY)
 
-    client = boto3.client('ec2')
+    #ec2 = boto3.client('ec2', region_name='us-east-1')
+    #ec2 = boto3.resource('ec2')
+
+    #results = iam.get_account_password_policy()
+
+    #client = boto3.client('ec2', region_name='us-east-1')
     #regions = [region['RegionName'] for region in client.describe_regions()['Regions']])
-    for region in client.describe_regions():
-        print(region)
+    #for region in client.describe_regions():
+    #    print(region)
+
+    #client = boto3.client('ec2', region_name='us-east-1')
+    #results = client.describe_regions()
+
+    session = boto3.session.Session()
+    results = boto3.session.get_available_regions('ec2',allow_non_regional=False)
+    for r in results:
+        print(r)
+
+    #import boto3
+    #from pprint import pprint
+    #ec2 = boto3.client('ec2', region_name='us-east-1')
+    #pprint(ec2c.describe_regions())
+    #results = ec2.describe_regions()
+    print(results)
+
+
+    #print(results)
 
     #d = {}
 
@@ -324,9 +347,9 @@ def get_cloudtrail():
 
 def main():
 
-    get_user_info()
-    get_account_info()
-    #get_cloudtrail()
+    #get_user_info()
+    #get_account_info()
+    get_cloudtrail()
 
 if __name__ == "__main__":
     main()
