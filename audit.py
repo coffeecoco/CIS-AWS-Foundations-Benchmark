@@ -19,10 +19,13 @@ config.readfp(open(r'.config'))
 
 SUMO_ENDPOINT = config.get('Default', 'sumo_endpoint')
 
+# Set profile
+boto3.setup_default_session(profile_name='cis_benchmarks')
+
 logging.basicConfig(level=None)
 logger = logging.getLogger(__name__)
 
-#timestamp = str(datetime.datetime.utcnow())
+now = datetime.datetime.utcnow().replace(microsecond=0)
 
 ### Handlers ###
 def date_handler(obj):
@@ -31,48 +34,22 @@ def date_handler(obj):
     else:
         raise TypeError
 
-def generate_timestamp():
-    global now
-    #global ts_90days
+def unused_credential_check(last_access):
 
-    now = datetime.datetime.utcnow()
-    #ts_90days = ts_now - datetime.timedelta(days=90)
-
-
-    #a = datetime.datetime.strptime("10/12/13", "%m/%d/%y")
-    #print(a)
-
-    print("now: ", now)
-    #print("then: ", ts_90days)
-
-def check_for_unused_credential(last_access):
-    #datetime.datetime.strptime(date, format1).strftime(format2)
-    '''
-
-    #2016-07-25T17:33:00+00:00
-
-    a = dt.strptime("10/12/13", "%m/%d/%y")
-    b = dt.strptime("10/15/13", "%m/%d/%y")
-    today = datetime.datetime.today()
-    modified_date = datetime.datetime.fromtimestamp(os.path.getmtime('yourfile'))
-    duration = today - modified_date
-    duration.days > 90 # approximation again. there is no direct support for months.
-    if True
-
-    '''
-
-    global now
-
+    #global now
     last_access = re.sub(r'\+\d+:\d+', '', last_access)
-    last_access = datetime.datetime.strptime(last_access, "%Y-%m-%dT%H:%M:%S")
+    try:
+        last_access = datetime.datetime.strptime(last_access, "%Y-%m-%dT%H:%M:%S")
+    except Exception as e:
+        print("error type", type(e))
+        pass
 
-    duration = now - last_access
+    duration =  now - last_access
 
-    if (duration.days > 90):
+    if duration.days > 15:
         return True
     else:
         return False
-
 
 
 def convert(input):
@@ -92,13 +69,7 @@ def send_to_sumo(data):
     '''
 
     data = json.dumps(data)
-    '''
-    data = urllib.urlencode(data)
-    req = urllib2.Request(SUMO_ENDPOINT, data)
-    response = urllib2.urlopen(req)
-    the_page = response.read()
-    print(the_page)
-    '''
+
     print(urllib2.urlopen(SUMO_ENDPOINT, data).read())
 
 ### CIS AWS Benchmark Audit Checks ###
@@ -145,6 +116,58 @@ def get_user_info():
             for index in range(len(fields)):
                 d[fields[index]] = s[index]
 
+            if (d['password_enabled'] == 'true'):
+                if d['password_last_used'] == 'N/A':
+                    #result = unused_credential_check(d['password_last_used'])
+                    d['password_greater_than_90'] = 'N/A'
+                else:
+                    result = unused_credential_check(d['password_last_used'])
+                    if result:
+                        d['password_greater_than_90'] = 'True'
+                    else:
+                        d['password_greater_than_90'] = 'False'
+
+            if (d["access_key_1_active"] == 'true'):
+                if d['access_key_1_last_used_date'] == 'N/A':
+                    d['access_key_1_greater_than_90'] = 'N/A'
+                else:
+                    result = unused_credential_check(d['access_key_1_last_used_date'])
+
+                    if result:
+                        d['access_key_1_greater_than_90'] = 'True'
+                    else:
+                        d['access_key_1_greater_than_90'] = 'False'
+
+                if d['access_key_1_last_rotated'] == 'N/A':
+                    d['access_key_1_rotated_within_90'] = 'N/A'
+                else:
+                    result = unused_credential_check(d['access_key_1_last_rotated'])
+
+                    if result:
+                        d['access_key_1_rotated_greater_than_90'] = 'True'
+                    else:
+                        d['access_key_1_rotated_greater_than_90'] = 'False'
+
+            if (d["access_key_2_active"] == 'true'):
+                if d['access_key_2_last_used_date'] == 'N/A':
+                    d['access_key_2_greater_than_90'] = 'N/A'
+                else:
+                    result = unused_credential_check(d['access_key_2_last_used_date'])
+                    if result:
+                        d['access_key_2_greater_than_90'] = 'True'
+                    else:
+                        d['access_key_2_greater_than_90'] = 'False'
+
+            if d['access_key_2_last_rotated'] == 'N/A':
+                d['access_key_2_rotated_within_90'] = 'N/A'
+            else:
+                result = unused_credential_check(d['access_key_1_last_rotated'])
+
+                if result:
+                    d['access_key_2_rotated_greater_than_90'] = 'True'
+                else:
+                    d['access_key_2_rotated_greater_than_90'] = 'False'
+
             if not re.search('^<root_account>', s[0]):
                 # Generate data for check 1.15
                 try: policy = iam.list_user_policies(UserName=s[0])
@@ -158,10 +181,10 @@ def get_user_info():
                 d["AttachedPolicy"] = "NA"
 
             userInfo['data'] = d
-            #send_to_sumo(userInfo)
+            send_to_sumo(userInfo)
             print(userInfo)
 
-def get_policy():
+def get_account_info():
     """Get data for audit checks 1.5-1.11, 1.13"""
     d = {}
 
@@ -173,33 +196,82 @@ def get_policy():
     except Exception, e:
         if re.search('NoSuchEntity', str(e)):
             print("No Account Password Policy exists")
+            results = str(e)
         else:
             print(e)
+            results = ("Error")
 
-    results = convert(results)
+    accountInfo = {'benchmarkVersion': '1.0.0', 'eventType': 'accountInfo', 'timestamp': str(now)}
 
-    d["PasswordPolicy"] = (results["PasswordPolicy"])
+    if results == "NoSuchEntity" or results == "Error":
+        print(results)
+        d["PasswordPolicy"] = "No Account Password Policy exists"
+    else:
+        results = convert(results)
 
-    ### Generate data for audit check 1.13 ###
+
+        # Key Value pairs not present in Password Policy until selected for the first time
+        if not "MaxPasswordAge" in results["PasswordPolicy"]:
+            results["PasswordPolicy"]["MaxPasswordAge"] = "False"
+        if not "RequireUppercaseCharacters" in results["PasswordPolicy"]:
+            results["PasswordPolicy"]["RequireUppercaseCharacters"] = "False"
+        if not "RequireLowercaseCharacters" in results["PasswordPolicy"]:
+            results["PasswordPolicy"]["RequireLowercaseCharacters"] = "False"
+        if not "HardExpiry" in results["PasswordPolicy"]:
+            results["PasswordPolicy"]["HardExpiry"] = "False"
+        if not "RequireNumbers" in results["PasswordPolicy"]:
+            results["PasswordPolicy"]["RequireNumbers"] = "False"
+        if not "ExpirePasswords" in results["PasswordPolicy"]:
+            results["PasswordPolicy"]["ExpirePasswords"] = "False"
+        if not "RequireSymbols" in results["PasswordPolicy"]:
+            results["PasswordPolicy"]["RequireSymbols"] = "False"
+        if not "AllowUsersToChangePassword" in results["PasswordPolicy"]:
+            results["PasswordPolicy"]["AllowUsersToChangePassword"] = "False"
+        if not "PasswordReusePrevention" in results["PasswordPolicy"]:
+            results["PasswordPolicy"]["PasswordReusePrevention"] = "False"
+        if not "MinimumPasswordLength" in results["PasswordPolicy"]:
+            results["PasswordPolicy"]["MinimumPasswordLength"] = "False"
+
+        d["PasswordPolicy"] = results["PasswordPolicy"]
+    print(d)
+
+
+    '''Generate data for audit check 1.13'''
+
     try: summary = iam.get_account_summary()
     except Exception, e:
         print(e)
 
-    d["AcountMFAEnabled"] = summary["SummaryMap"]["AccountMFAEnabled"]
+    if summary["SummaryMap"]["AccountMFAEnabled"] == '1':
+        d["AccountMFAEnabled"] = "True"
+    else:
+        d["AccountMFAEnabled"] = "False"
 
-    send_to_sumo(d)
+    accountInfo['data'] = d
+    send_to_sumo(accountInfo)
 
 def get_cloudtrail():
     """Get data for audit checks 2.1-2.8"""
 
-    cloudtrail = boto3.client('cloudtrail')
+    #cloudtrail = boto3.client('cloudtrail')
     #cloudtrail = boto3.client('cloudtrail', aws_access_key_id=AWS_ACCESS_KEY_ID, aws_secret_access_key=AWS_SECRET_ACCESS_KEY)
 
-    d = {}
+    client = boto3.client('ec2')
+    #regions = [region['RegionName'] for region in client.describe_regions()['Regions']])
+    for region in client.describe_regions():
+        print(region)
 
-    trails = cloudtrail.describe_trails(trailNameList=[], includeShadowTrails=True)
-    trails2 = cloudtrail.describe_trails()
-    trailList = trails2["trailList"]
+    #d = {}
+
+    #trails = cloudtrail.describe_trails(trailNameList=[], includeShadowTrails=True)
+    #trails2 = cloudtrail.describe_trails()
+
+    #trailList = trails2["trailList"]
+
+    #print("\n\n",trails,"\n\n")
+    #print("\n\n",trails2,"\n\n")
+
+    '''
     for index in range(len(trailList)):
         print(trailList[index])
 
@@ -212,7 +284,7 @@ def get_cloudtrail():
     ### Generate data for check 2.3 ###
     bucket = trails['trailList'][0]['S3BucketName']
 
-    s3 = boto3.client('s3')
+    s3 = boto3.client('s3', profile_name=PROFILE_NAME)
     #s3 = boto3.client('s3', aws_access_key_id=AWS_ACCESS_KEY_ID, aws_secret_access_key=AWS_SECRET_ACCESS_KEY)
 
     bucket_acl = s3.get_bucket_acl(Bucket=bucket)
@@ -248,18 +320,13 @@ def get_cloudtrail():
     
     ### Generate data for check 2.4 ###
     #print(trails2)
+    '''
 
 def main():
 
-    generate_timestamp()
-
-    last_access = '2016-10-25T17:33:00+00:00'
-
     get_user_info()
-
-    result = check_for_unused_credential(last_access)
-    print('result', result)
-
+    get_account_info()
+    #get_cloudtrail()
 
 if __name__ == "__main__":
     main()
