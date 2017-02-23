@@ -97,8 +97,7 @@ def get_policy():
     d = {}
     
     iam = boto3.client('iam',
-                    aws_access_key_id=AWS_ACCESS_KEY_ID,
-                    aws_secret_access_key=AWS_SECRET_ACCESS_KEY
+                    
                     )
 
     ### Generate data for audit checks 1.5-1.11 ###
